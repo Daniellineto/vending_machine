@@ -5,7 +5,7 @@ module tb_vending;
 
     // ==========================================
     // Sinais do Testbench
-    // ==========================================
+    // =========================================
     logic clk;
     logic rst;
     logic [1:0] coin_in;
@@ -38,6 +38,10 @@ module tb_vending;
         .state_out(state_out)
     );
 
+	initial begin
+        $fsdbDumpfile("waves.fsdb"); // Nome do arquivo que o Verdi vai procurar
+        $fsdbDumpvars(0, tb_vending, "+all"); // '0' significa gravar todos os sinais desta hierarquia para baixo
+    end
     // ==========================================
     // Geração do Relógio (Clock) - 50 MHz (20ns)
     // ==========================================
