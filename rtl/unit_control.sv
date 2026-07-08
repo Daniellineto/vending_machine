@@ -7,13 +7,11 @@ module unit_control (
     input  logic cancel,
     input  logic [1:0] coin_in,
     input  logic can_sell,
-    
-    // Saídas Externas
+
     output logic dispense,
     output logic error,
     output logic [2:0] state_out,
-    
-    // Sinais de Controlo para o Datapath
+
     output logic credit_load,
     output logic mem_read,
     output logic mem_write,
@@ -22,85 +20,82 @@ module unit_control (
 
     state_t current_state, next_state;
 
-    // 1. Lógica Sequencial (Registo do Estado Atual)
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             current_state <= IDLE;
         end else if (cancel) begin
-            // O sinal cancel força o regresso ao IDLE a partir de qualquer estado
-            current_state <= IDLE; 
+            current_state <= IDLE;
         end else begin
             current_state <= next_state;
         end
     end
 
-    // 2. Lógica Combinacional (Transição para o Próximo Estado)
     always_comb begin
-        next_state = current_state; // Por omissão, mantém-se no mesmo estado
-        
+        next_state = current_state;
+
         case (current_state)
             IDLE: begin
-                if (coin_in != COIN_NONE) 
+                if (coin_in != COIN_NONE) begin
                     next_state = COLLECT;
+                end
             end
             COLLECT: begin
-                if (confirm) 
+                if (confirm) begin
                     next_state = CHECK;
+                end
             end
             CHECK: begin
-                if (can_sell) 
+                if (can_sell) begin
                     next_state = DISPENSE;
-                else          
+                end else begin
                     next_state = ERROR;
+                end
             end
             DISPENSE: begin
-                next_state = CHANGE; // Avanço incondicional
+                next_state = CHANGE;
             end
             CHANGE: begin
-                next_state = IDLE;   // Avanço incondicional
+                next_state = IDLE;
             end
             ERROR: begin
-                // Mantém-se no ERROR até que o utilizador prima "cancel".
-                // Como o "cancel" já está a forçar o IDLE no bloco always_ff acima, 
-                // não precisamos de colocar lógica de transição extra aqui.
+                next_state = current_state;
             end
-            default: next_state = IDLE;
+            default: begin
+                next_state = IDLE;
+            end
         endcase
     end
 
-    // 3. Lógica Combinacional (Saídas de Moore)
     always_comb begin
-        // Valores por omissão (muito importante para evitar latches)
         dispense    = 1'b0;
         error       = 1'b0;
         credit_load = 1'b0;
         mem_read    = 1'b0;
         mem_write   = 1'b0;
         change_en   = 1'b0;
-        state_out   = current_state; // A saída regista reflete o estado atual
+        state_out   = current_state;
 
         case (current_state)
             IDLE: begin
-                // Nenhuma saída ativa
+                credit_load = (coin_in != COIN_NONE);
             end
             COLLECT: begin
-                // Ativa a soma se houver inserção de moeda
-                if (coin_in != COIN_NONE) 
-                    credit_load = 1'b1;
+                credit_load = (coin_in != COIN_NONE);
             end
             CHECK: begin
-                mem_read = 1'b1; // Lê o preço e o stock
+                mem_read = 1'b1;
             end
             DISPENSE: begin
                 dispense  = 1'b1;
-                mem_write = 1'b1; // Decrementa o stock
+                mem_write = 1'b1;
             end
             CHANGE: begin
-                change_en   = 1'b1; // Manda guardar o troco na saída
-                credit_load = 1'b1; // Zera o crédito (pois coin_in será 00 nesta fase)
+                change_en = 1'b1;
             end
             ERROR: begin
                 error = 1'b1;
+            end
+            default: begin
             end
         endcase
     end
