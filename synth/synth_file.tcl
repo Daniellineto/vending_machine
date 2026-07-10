@@ -5,7 +5,7 @@
 # ------------------------------------------------------------
 # Carregar configuração 
 # ------------------------------------------------------------
-set search_path [list . /Tools/synopsys/bibliotecas/saed32/]
+set search_path [list .libs]
 set target_library "saed32rvt_tt1v25c.db"
 set link_library "* $target_library"
 
