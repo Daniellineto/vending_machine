@@ -89,7 +89,12 @@ clean_synth:
 		$(REP_DIR)/*.rpt \
 		$(SYNTH_DIR)/*.ddc \
 		$(SYNTH_DIR)/*.db \
-		$(SYNTH_DIR)/*_syn.v
+		$(SYNTH_DIR)/*_syn.v \
+		*.syn \
+		*.pvl \
+		*.pvk \
+		*.mr \
+		cksum_dir
 
 # ==========================================
 # Limpeza da simulação
@@ -108,9 +113,8 @@ clean_sim:
 		*.fsdb \
 		*.log \
 		*.vpd \
-		*.vcd \
-		vc_hdrs.h \
-		cksum_dir
+		*.vcd 
+		
 
 # ==========================================
 # Limpeza total
