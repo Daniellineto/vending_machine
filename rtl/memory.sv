@@ -26,13 +26,17 @@ module memory (
     always_comb begin
         stock = mem_read ? stock_mem[sel_item] : 8'd0;
 
-        case (sel_item)
-            ITEM_CAFE:  price = PRICE_CAFE;
-            ITEM_AGUA:  price = PRICE_AGUA;
-            ITEM_SUCO:  price = PRICE_SUCO;
-            ITEM_SNACK: price = PRICE_SNACK;
-            default:    price = 8'd0;
-        endcase
+        if (mem_read) begin
+            case (sel_item)
+                ITEM_CAFE:  price = PRICE_CAFE;
+                ITEM_AGUA:  price = PRICE_AGUA;
+                ITEM_SUCO:  price = PRICE_SUCO;
+                ITEM_SNACK: price = PRICE_SNACK;
+                default:    price = 8'd0;
+            endcase
+        end else begin
+            price = 8'd0;
+        end
     end
 
 endmodule

@@ -14,7 +14,7 @@ module vending_top (
 );
 
     logic can_sell, credit_clear, credit_load, mem_read, mem_write, change_en;
-    logic [7:0] credit_w, price_w, stock_w, change_w;
+    logic [7:0] credit_w, price_w, price_hold_w, stock_w, change_w;
 
     unit_control u_control (
         .clk         (clk),
@@ -61,8 +61,9 @@ module vending_top (
     );
 
     subtractor u_subtractor (
+        .change_en   (change_en),
         .credit      (credit_w),
-        .price       (price_w),
+        .price       (price_hold_w),
         .change      (change_w)
     );
 
@@ -70,8 +71,15 @@ module vending_top (
         if (rst) begin
             change_out <= 8'd0;
             display    <= 8'd0;
+            price_hold_w <= 8'd0;
         end else begin
             display <= credit_w;
+
+            if (mem_read) begin
+                price_hold_w <= price_w;
+            end else if (cancel || change_en) begin
+                price_hold_w <= 8'd0;
+            end
 
             if (cancel) begin
                 change_out <= credit_w;
