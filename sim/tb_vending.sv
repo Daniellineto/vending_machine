@@ -136,12 +136,12 @@ module tb_vending;
 
         // -----------------------------------------------------------
         // CENÁRIO 2: Erro por crédito insuficiente
-        // O utilizador insere R$ 0.25 e tenta comprar Água (R$ 0.50).
+        // O utilizador insere R$ 0.25 e tenta comprar Snack (R$ 1.00).
         // Deve ativar o sinal de erro.
         // -----------------------------------------------------------
         $display("\n--- Iniciando Cenario 2: Credito Insuficiente ---");
         insert_coin(COIN_25);
-        sel_item = ITEM_AGUA;
+        sel_item = ITEM_SNACK;
 
         confirm = 1;
         wait_cycles(1);
