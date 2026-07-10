@@ -1,5 +1,3 @@
-import vending_pkg::*;
-
 module memory (
     input  logic clk,
     input  logic rst,
@@ -9,6 +7,8 @@ module memory (
     output logic [7:0] price,
     output logic [7:0] stock
 );
+
+    import vending_pkg::*;
 
     logic [7:0] stock_mem [0:3];
 
@@ -24,7 +24,7 @@ module memory (
     end
 
     always_comb begin
-        stock = stock_mem[sel_item];
+        stock = mem_read ? stock_mem[sel_item] : 8'd0;
 
         case (sel_item)
             ITEM_CAFE:  price = PRICE_CAFE;

@@ -1,5 +1,3 @@
-import vending_pkg::*;
-
 module vending_top (
     input  logic clk,
     input  logic rst,
