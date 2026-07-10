@@ -126,7 +126,7 @@ module tb_vending;
         press_confirm();
 
         if (change_out == 8'd25) begin
-            $display("  [PASS] Cenario 1: Troco correto (25 centimos).");
+            $display("  [PASS] Cenario 1: Troco correto (25 centavos).");
         end else begin
             $display("  [FAIL] Cenario 1: Troco incorreto! Obtido: %0d", change_out);
             erros_detetados++;
