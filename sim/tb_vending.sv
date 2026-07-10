@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
-import vending_pkg::*;
 
 module tb_vending;
+    import vending_pkg::*;
 
     // ==========================================
     // Sinais do Testbench
@@ -12,14 +12,15 @@ module tb_vending;
     logic [1:0] sel_item;
     logic confirm;
     logic cancel;
-    
+
     logic dispense;
     logic error;
     logic [7:0] change_out;
     logic [7:0] display;
     logic [2:0] state_out;
 
-    int erros_detetados = 0; // Contador para o sistema self-checking
+    int erros_detetados = 0;
+    int wait_ticks = 0;
 
     // ==========================================
     // Instanciação do DUT (Device Under Test)
@@ -38,10 +39,11 @@ module tb_vending;
         .state_out(state_out)
     );
 
-	initial begin
-        $fsdbDumpfile("waves.fsdb"); // Nome do arquivo que o Verdi vai procurar
-        $fsdbDumpvars(0, tb_vending, "+all"); // '0' significa gravar todos os sinais desta hierarquia para baixo
+    initial begin
+        $fsdbDumpfile("waves.fsdb");
+        $fsdbDumpvars(0, tb_vending, "+all");
     end
+    
     // ==========================================
     // Geração do Relógio (Clock) - 50 MHz (20ns)
     // ==========================================
@@ -54,46 +56,51 @@ module tb_vending;
     // Timeout de Segurança (Exigência do projeto)
     // ==========================================
     initial begin
-        #10000; // Se a simulação durar mais que 10.000 ns, algo correu mal (loop infinito)
-        $display("\n[FALHA FATAL] Timeout atingido! A FSM travou.");
-        $finish;
+        #10000 begin
+            $display("\n[FALHA FATAL] Timeout atingido! A FSM travou.");
+            $finish;
+        end
     end
 
     // ==========================================
-    // Tarefas (Tasks) para simular o Utilizador
+    // Tasks para simular o Utilizador
     // ==========================================
+    task wait_cycles(input int cycles);
+        for (int i = 0; i < cycles; i++) begin
+            @(posedge clk) wait_ticks++;
+        end
+    endtask
+
     task apply_reset();
         rst = 1;
         coin_in = COIN_NONE;
         sel_item = ITEM_CAFE;
         confirm = 0;
         cancel = 0;
-        @(posedge clk);
-        @(posedge clk);
+        wait_cycles(2);
         rst = 0;
-        @(posedge clk);
+        wait_cycles(1);
     endtask
 
     task insert_coin(input logic [1:0] coin_type);
         coin_in = coin_type;
-        @(posedge clk);
+        wait_cycles(1);
         coin_in = COIN_NONE;
-        @(posedge clk);
+        wait_cycles(1);
     endtask
 
     task press_confirm();
         confirm = 1;
-        @(posedge clk);
+        wait_cycles(1);
         confirm = 0;
-        // Espera a FSM processar CHECK, DISPENSE e CHANGE (uns 4 ciclos)
-        repeat(4) @(posedge clk); 
+        wait_cycles(4);
     endtask
 
     task press_cancel();
         cancel = 1;
-        @(posedge clk);
+        wait_cycles(1);
         cancel = 0;
-        @(posedge clk);
+        wait_cycles(1);
     endtask
 
     // ==========================================
@@ -103,10 +110,10 @@ module tb_vending;
         $display("==================================================");
         $display("   INICIO DA SIMULACAO - VENDING MACHINE FSM      ");
         $display("==================================================");
-        
-        // 0. Inicialização
+
         apply_reset();
         $display("[INFO] Sistema reiniciado.");
+
 
         // -----------------------------------------------------------
         // CENÁRIO 1: Compra bem-sucedida com troco
@@ -117,7 +124,7 @@ module tb_vending;
         insert_coin(COIN_100);
         sel_item = ITEM_SUCO;
         press_confirm();
-        
+
         if (change_out == 8'd25) begin
             $display("  [PASS] Cenario 1: Troco correto (25 centimos).");
         end else begin
@@ -125,8 +132,7 @@ module tb_vending;
             erros_detetados++;
         end
 
-        // Aguarda voltar ao IDLE
-        repeat(2) @(posedge clk);
+        wait_cycles(2);
 
         // -----------------------------------------------------------
         // CENÁRIO 2: Erro por crédito insuficiente
@@ -136,21 +142,20 @@ module tb_vending;
         $display("\n--- Iniciando Cenario 2: Credito Insuficiente ---");
         insert_coin(COIN_25);
         sel_item = ITEM_AGUA;
-        
+
         confirm = 1;
-        @(posedge clk);
+        wait_cycles(1);
         confirm = 0;
-        @(posedge clk); // Estado CHECK
-        @(posedge clk); // Vai para estado ERROR
-        
+        wait_cycles(1);
+        wait_cycles(1);
+
         if (error == 1'b1) begin
             $display("  [PASS] Cenario 2: Erro detetado corretamente.");
         end else begin
             $display("  [FAIL] Cenario 2: Sinal de erro nao ativou!");
             erros_detetados++;
         end
-        
-        // Pressionar cancel para sair do erro e reaver o dinheiro
+
         press_cancel();
 
         // -----------------------------------------------------------
@@ -160,16 +165,15 @@ module tb_vending;
         $display("\n--- Iniciando Cenario 3: Cancelamento da Operacao ---");
         insert_coin(COIN_50);
         press_cancel();
-        
-        // No ciclo em que o cancelamento ocorre, o troco deve devolver o crédito (50)
+
         if (change_out == 8'd50 && state_out == IDLE) begin
             $display("  [PASS] Cenario 3: Dinheiro devolvido e regressou ao IDLE.");
         end else begin
             $display("  [FAIL] Cenario 3: Falha no cancelamento! Troco obtido: %0d", change_out);
             erros_detetados++;
         end
-        
-        repeat(2) @(posedge clk);
+
+        wait_cycles(2);
 
         // -----------------------------------------------------------
         // CENÁRIO 4: Esgotamento de stock
@@ -178,33 +182,28 @@ module tb_vending;
         // -----------------------------------------------------------
         $display("\n--- Iniciando Cenario 4: Esgotamento de Stock ---");
         sel_item = ITEM_CAFE;
-        
-        // Comprar os 5 cafés iniciais
+
         for (int i = 0; i < 5; i++) begin
             insert_coin(COIN_25);
             press_confirm();
         end
         $display("  [INFO] 5 cafes comprados (Stock de cafe deve ser 0 agora).");
-        
-        // Tentar comprar o 6º café (com dinheiro suficiente)
+
         insert_coin(COIN_25);
         confirm = 1;
-        @(posedge clk);
+        wait_cycles(1);
         confirm = 0;
-        @(posedge clk); // CHECK
-        @(posedge clk); // Deve ir para ERROR
-        
+        wait_cycles(1);
+        wait_cycles(1);
+
         if (error == 1'b1) begin
             $display("  [PASS] Cenario 4: Venda bloqueada por falta de stock.");
         end else begin
             $display("  [FAIL] Cenario 4: Vendeu item sem stock!");
             erros_detetados++;
         end
-        press_cancel(); // Limpar a máquina
+        press_cancel();
 
-        // ==========================================
-        // Veredicto Final (Self-Checking)
-        // ==========================================
         $display("\n==================================================");
         if (erros_detetados == 0) begin
             $display("  RESULTADO FINAL: >>> PASS <<<");
@@ -214,18 +213,12 @@ module tb_vending;
             $display("  Foram encontrados %0d erros.", erros_detetados);
         end
         $display("==================================================\n");
-        
+
         $finish;
     end
 
-    // ==========================================
-    // Gerar ficheiro para o Verdi/DVE
-    // ==========================================
     initial begin
-        $vcdpluson; // Comando VCS para gerar waveform
-        // Se usar um simulador padrão Verilog, substitua por:
-        // $dumpfile("vending.vcd");
-        // $dumpvars(0, tb_vending);
+        $vcdpluson;
     end
 
 endmodule

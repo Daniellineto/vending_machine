@@ -1,5 +1,3 @@
-import vending_pkg::*;
-
 module unit_control (
     input  logic clk,
     input  logic rst,
@@ -17,6 +15,8 @@ module unit_control (
     output logic mem_write,
     output logic change_en
 );
+
+    import vending_pkg::*;
 
     state_t current_state, next_state;
 

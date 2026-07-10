@@ -1,5 +1,3 @@
-import vending_pkg::*;
-
 module credit_reg (
     input  logic clk,
     input  logic rst,
@@ -8,6 +6,8 @@ module credit_reg (
     input  logic [1:0] coin_in,
     output logic [7:0] credit
 );
+
+    import vending_pkg::*;
 
     logic [7:0] coin_value;
 

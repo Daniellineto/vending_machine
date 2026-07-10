@@ -4,7 +4,7 @@
 RTL_DIR = rtl
 SIM_DIR   = sim
 SYNTH_DIR = synth
-REP_DIR   = reports
+REP_DIR   = synth/reports
 
 # ===========================================
 # Arquivos
@@ -74,7 +74,7 @@ wave:
 # Síntese
 # ==========================================
 synth:
-	dc_shell -f $(SYNTH_DIR)/synth.tcl
+	dc_shell -f $(SYNTH_DIR)/synth_file.tcl
 
 # ==========================================
 # Limpeza da síntese
@@ -106,7 +106,9 @@ clean_sim:
 		DVEfiles \
 		.vlogan* \
 		*.fsdb \
-		*.log
+		*.log \
+		*.vpd \
+		*.vcd
 
 # ==========================================
 # Limpeza total
