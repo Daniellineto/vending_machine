@@ -108,7 +108,9 @@ clean_sim:
 		*.fsdb \
 		*.log \
 		*.vpd \
-		*.vcd
+		*.vcd \
+		vc_hdrs.h \
+		cksum_dir
 
 # ==========================================
 # Limpeza total
